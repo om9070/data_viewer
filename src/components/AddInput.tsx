@@ -39,6 +39,10 @@ const AddInput:React.FC<propsPlace>=({placeHolderProps,submitType})=>{
     }
      
     const handleSubmit=()=>{
+        if(!input[placeHolderProps.storeName]||!input[placeHolderProps.cityName]||!input[placeHolderProps.countryName]){
+            return alert("input field required.")
+        }
+        
         if(submitType===submit_store){
             dispatch({ type: addStore, payload: {...input,sn:storeData?.editData?.sn??storeData?.store.length} })
         }else if(submitType===submit_sku){
