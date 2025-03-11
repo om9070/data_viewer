@@ -24,29 +24,29 @@ const Planning = () => {
     let months = date.getMonth();
     setMonths(months);
     const map = new Map();
-    
+
     storeData.store.forEach((item: any) => {
       map.set(item.sn, item);
     });
-    
+
     storeData.add_sku.forEach((item: any) => {
       const existingItem = map.get(item.sn);
       const weekCount = getWeeks();
-      
+
       // Create week-specific fields for each item
-      const weekFields:any = {};
+      const weekFields: any = {};
       for (let i = 0; i < weekCount; i++) {
         weekFields[`salesUnits${i}_${item.sn}`] = 0;
         weekFields[`salesDollars${i}_${item.sn}`] = 0;
         weekFields[`gmDollars${i}_${item.sn}`] = 0;
         weekFields[`gmPercent${i}_${item.sn}`] = 0;
       }
-      
+
       if (existingItem) {
         map.set(item.sn, { ...existingItem, ...item, ...weekFields });
-      } 
+      }
     });
-    
+
     const getarr = Array.from(map.values());
     console.log(getarr, "storeData.add_sku");
     setRowData(getarr as any);
@@ -75,16 +75,23 @@ const Planning = () => {
       children: Array.from({ length: getWeeks() }, (_, i) => ({
         headerName: `Week ${i + 1}`,
         children: [
-          { 
-            field: `salesUnits${i}`, 
-            headerName: "Sales Units", 
+          {
+            field: `salesUnits${i}`,
+            headerName: "Sales Units",
             editable: true,
             valueGetter: (params: any) => {
               return params.data[`salesUnits${i}_${params.data.sn}`];
             },
             valueSetter: (params: any) => {
-              params.data[`salesUnits${i}_${params.data.sn}`] = params.newValue;
-              return true;
+              const newValue = params.newValue;
+
+              // Validate: Only allow numbers (integers or decimals)
+              if (!isNaN(newValue) && newValue !== null && newValue !== "") {
+                params.data[`salesUnits${i}_${params.data.sn}`] = Number(newValue);
+                return true; // Update value
+              }
+              alert("please put numeric value.")
+              return false;
             }
           },
           {
@@ -95,9 +102,9 @@ const Planning = () => {
               return params.data[`salesDollars${i}_${params.data.sn}`];
             }
           },
-          { 
-            field: `gmDollars${i}`, 
-            headerName: "GM Dollars", 
+          {
+            field: `gmDollars${i}`,
+            headerName: "GM Dollars",
             editable: false,
             valueGetter: (params: any) => {
               return params.data[`gmDollars${i}_${params.data.sn}`];
@@ -107,8 +114,9 @@ const Planning = () => {
             field: `gmPercent${i}`,
             headerName: "GM %",
             cellStyle: percentageCellStyle,
+            editable: false,
             valueFormatter: (params: any) =>
-              `${(params.value * 100).toFixed(1)}%`,
+              `${(params.value).toFixed(1)}%`,
             valueGetter: (params: any) => {
               return params.data[`gmPercent${i}_${params.data.sn}`];
             }
@@ -129,7 +137,7 @@ const Planning = () => {
   const onCellEditingStopped = (event: any) => {
     const columnId = event.column.getColId();
     const weekMatch = columnId.match(/salesUnits(\d+)/);
-    
+
     if (!weekMatch) return;
     
     const weekNum = weekMatch[1];
@@ -142,11 +150,12 @@ const Planning = () => {
     const gmDaller = (salesDollarsData - salesValue) * cost;
     const gmDollarsData = salesDollarsData > 0 ? gmDaller / salesDollarsData : 0;
     
-    setRowData((prevRowData: any[]) => 
+    
+    setRowData((prevRowData: any[]) =>
       prevRowData.map((row) => {
         if (row.sn === event.data.sn) {
-          return { 
-            ...row, 
+          return {
+            ...row,
             [`salesUnits${weekNum}_${sn}`]: salesValue,
             [`salesDollars${weekNum}_${sn}`]: salesDollarsData,
             [`gmDollars${weekNum}_${sn}`]: gmDaller,
